@@ -42,4 +42,4 @@ VOLUME [ "/source", "/destination" ]
 
 ENTRYPOINT [ "rar2fs" ]
 
-CMD [ "-f", "--seek-length=1", "-o", "allow_other", "/source", "/destination" ]
+CMD [ "-f", "-o", "allow_other", "-o", "auto_unmount", "--seek-length=1", "/source", "/destination" ]
