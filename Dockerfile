@@ -39,6 +39,7 @@ RUN apk add --no-cache --purge -uU \
   libstdc++
 
 COPY --from=builder /rar2fs/rar2fs /usr/local/bin/rar2fs
+COPY ./entrypoint.sh /
 
 VOLUME [ "/source", "/destination" ]
 
