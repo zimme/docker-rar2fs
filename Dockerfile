@@ -42,6 +42,6 @@ COPY --from=builder /rar2fs/rar2fs /usr/local/bin/rar2fs
 
 VOLUME [ "/source", "/destination" ]
 
-ENTRYPOINT [ "rar2fs" ]
+ENTRYPOINT [ "/entrypoint.sh" ]
 
 CMD [ "-f", "-o", "allow_other", "-o", "auto_unmount", "--seek-length=1", "/source", "/destination" ]
