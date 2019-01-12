@@ -1,6 +1,6 @@
 FROM alpine as builder
 
-RUN apk add --no-cache --purge -uU \
+RUN apk add --no-cache --purge -uU --virtual build-deps \
   curl \
   fuse-dev \
   g++ \
@@ -29,6 +29,8 @@ WORKDIR /rar2fs
 RUN ./configure --with-unrar=../unrar --with-unrar-lib=/usr/lib/
 
 RUN make
+
+RUN apk del build-deps
 
 FROM alpine
 
