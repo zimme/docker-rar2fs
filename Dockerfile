@@ -40,7 +40,6 @@ RUN apk add --no-cache --purge -uU \
 
 COPY --from=builder /rar2fs/rar2fs /usr/local/bin/rar2fs
 
-VOLUME [ "/source", "/destination" ]
 
 ENTRYPOINT [ "rar2fs" ]
 
