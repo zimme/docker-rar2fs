@@ -26,8 +26,6 @@ RUN make lib; make install-lib
 
 WORKDIR /rar2fs
 
-RUN autoreconf -f -i
-
 RUN ./configure --with-unrar=../unrar --with-unrar-lib=/usr/lib/
 
 RUN make
