@@ -22,6 +22,8 @@ RUN tar -C /rar2fs --strip-components 1 -xzvf "rar2fs-${RAR2FS_VERSION}.tar.gz"
 
 WORKDIR /unrar
 
+RUN ./configure
+
 RUN make lib; make install-lib
 
 WORKDIR /rar2fs
