@@ -34,7 +34,8 @@ RUN apk del build-deps
 
 FROM alpine
 
-ENV FUSE_THREAD_STACK 160000
+ARG FUSE_THREAD_STACK=160000
+ENV FUSE_THREAD_STACK $FUSE_THREAD_STACK
 
 RUN apk add --no-cache --purge -uU \
   fuse \
