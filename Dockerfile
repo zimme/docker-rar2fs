@@ -34,6 +34,8 @@ RUN apk del build-deps
 
 FROM alpine
 
+ENV FUSE_THREAD_STACK 160000
+
 RUN apk add --no-cache --purge -uU \
   fuse \
   libstdc++
