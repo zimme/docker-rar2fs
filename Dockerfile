@@ -10,15 +10,15 @@ RUN apk add --no-cache --purge -uU --virtual build-deps \
 ARG RAR_VERSION=5.6.8
 ARG RAR2FS_VERSION=1.27.1
 
-RUN curl -L -O "https://www.rarlab.com/rar/unrarsrc-${RAR_VERSION}.tar.gz"
+RUN curl -L -O "https://www.rarlab.com/rar/unrarsrc-$RAR_VERSION.tar.gz"
 
-RUN curl -L -O "https://github.com/hasse69/rar2fs/releases/download/v${RAR2FS_VERSION}/rar2fs-${RAR2FS_VERSION}.tar.gz"
+RUN curl -L -O "https://github.com/hasse69/rar2fs/releases/download/v$RAR2FS_VERSION/rar2fs-$RAR2FS_VERSION.tar.gz"
 
-RUN tar xzvf "unrarsrc-${RAR_VERSION}.tar.gz"
+RUN tar xzvf "unrarsrc-$RAR_VERSION.tar.gz"
 
 RUN mkdir rar2fs
 
-RUN tar -C /rar2fs --strip-components 1 -xzvf "rar2fs-${RAR2FS_VERSION}.tar.gz"
+RUN tar -C /rar2fs --strip-components 1 -xzvf "rar2fs-$RAR2FS_VERSION.tar.gz"
 
 WORKDIR /unrar
 
