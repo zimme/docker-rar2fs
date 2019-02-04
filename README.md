@@ -20,6 +20,8 @@ docker run \
   -d \
   --init \
   --name rar2fs \
+  --cap-add SYS_ADMIN \
+  --device /dev/fuse \
   -v <path/to/rar/files:/source \
   -v <path/to/empty/folder>:/destination \
   zimme/rar2fs
@@ -42,6 +44,8 @@ docker run \
   -d \
   --init \
   --name rar2fs \
+  --cap-add SYS_ADMIN \
+  --device /dev/fuse \
   -v <path/to/rar/files:/source \
   -v <path/to/empty/folder>:/destination \
   zimme/rar2fs \
