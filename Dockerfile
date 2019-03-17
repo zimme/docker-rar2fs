@@ -1,4 +1,4 @@
-FROM alpine as builder
+FROM alpine:latest as builder
 
 RUN apk add --no-cache --purge -uU --virtual build-deps \
   curl \
@@ -32,7 +32,7 @@ RUN make
 
 RUN apk del build-deps
 
-FROM alpine
+FROM alpine:latest
 
 ARG FUSE_THREAD_STACK=160000
 ENV FUSE_THREAD_STACK $FUSE_THREAD_STACK
