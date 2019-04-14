@@ -6,7 +6,7 @@ This Docker image will run `rar2fs` with `-o allow_other -o auto_unmount
 --seek-length=1` by default.
 
 Bind-mount your rar files on `/source` and bind-mount an empty folder on
-`/destination` to hold the rar2fs mount.
+`/destination` to hold the rar2fs mount, and make sure you set the bind-propagation to `shared`.
 
 The image will run `rar2fs` as `root`. I recommend to override this
 using the -u and/or --group-add of docker run.
@@ -22,8 +22,9 @@ docker run \
   --name rar2fs \
   --cap-add SYS_ADMIN \
   --device /dev/fuse \
+  --network none
   -v <path/to/rar/files>:/source \
-  -v <path/to/empty/folder>:/destination \
+  -v <path/to/empty/folder>:/destination:shared \
   zimme/rar2fs
 ```
 
@@ -46,8 +47,9 @@ docker run \
   --name rar2fs \
   --cap-add SYS_ADMIN \
   --device /dev/fuse \
+  --network none
   -v <path/to/rar/files>:/source \
-  -v <path/to/empty/folder>:/destination \
+  -v <path/to/empty/folder>:/destination:shared \
   zimme/rar2fs \
   <custom rar2fs option> \
   -o <custom fuse option> \
