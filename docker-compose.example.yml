@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  rar2fs:
+    image: zimme/rar2fs:latest
+    init: true
+    devices:
+      - /dev/fuse:/dev/fuse
+    cap_add:
+      - MKNOD
+      - SYS_ADMIN
+    volumes:
+      - '<path/to/rar/files>:/source'
+      - '<path/to/empty/folder>:/destination:rshared'
