@@ -7,7 +7,7 @@ RUN apk add --no-cache --purge -uU --virtual build-deps \
   make \
   tar
 
-ARG RAR_VERSION=5.7.3
+ARG RAR_VERSION=5.8.3
 ARG RAR2FS_VERSION=1.27.2
 
 RUN curl -L -O "https://www.rarlab.com/rar/unrarsrc-$RAR_VERSION.tar.gz"
