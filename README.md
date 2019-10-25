@@ -18,6 +18,10 @@ You will need to add capabilities `MKNOD` and `SYS_ADMIN` as well as
 providing the `/dev/fuse` device to the container for it to be able to
 mount a fuse fs like rar2fs.
 
+If your docker host is using `apparmor` the following flag,
+`--security-opt apparmor:unconfined`, might be needed to have
+permission to use fuse within the container.
+
 ## Usage
 
 ```sh
