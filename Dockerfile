@@ -1,4 +1,4 @@
-FROM alpine:3.17.2 as builder
+FROM alpine:3.18.2 as builder
 
 RUN apk add --no-cache --update-cache --upgrade \
   autoconf \
@@ -28,7 +28,7 @@ WORKDIR /rar2fs
 
 RUN autoreconf -f -i && ./configure && make
 
-FROM alpine:3.17.2
+FROM alpine:3.18.2
 
 ARG FUSE_THREAD_STACK=320000
 ENV FUSE_THREAD_STACK $FUSE_THREAD_STACK
