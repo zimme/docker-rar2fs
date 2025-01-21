@@ -62,7 +62,6 @@ jobs:
       - name: Set Tag Variables
         run: |
           # Define tag variables based on extracted and static environment variables
-          TAG_TEST="${ORGANIZATION}/${IMAGE_NAME}:test"
           TAG_LATEST="${ORGANIZATION}/${IMAGE_NAME}:latest"
           TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${BASE_IMAGE_NAME}${BASE_IMAGE_VERSION}-${RAR2FS_VERSION}-${RAR_VERSION}"
           TAG_GHCR_LATEST="ghcr.io/${TAG_LATEST}"
@@ -88,19 +87,19 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker images
+      - name: Build Docker image for testing
         uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           tags: |
-            ${{ env.TAG_TEST }}
+            ${{ env.TAG_LATEST }}
 
       - name: Test Docker image
         run: |
-          docker run --rm ${{ env.TAG_TEST }} --version
+          docker run --rm ${{ env.TAG_LATEST }} --version
 
-      - name: Push Docker images
+      - name: Build and push Docker images
         uses: docker/build-push-action@v6
         with:
           context: .
