@@ -6,19 +6,8 @@ on:
       - "main"
 
 env:
-  # Static Repository Configuration
   ORGANIZATION: zimme
   IMAGE_NAME: rar2fs
-
-  # Test tags
-  TAG_TEST: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:test
-
-  # Docker Hub tags (only tags that do not depend on step-extracted variables)
-  TAG_LATEST: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:latest
-
-  # GitHub Container Registry tags (initially only latest tag)
-  GHCR_REGISTRY: ghcr.io
-  TAG_GHCR_LATEST: ${{ env.GHCR_REGISTRY }}/${{ env.TAG_LATEST }}
 
 jobs:
   docker:
@@ -70,14 +59,20 @@ jobs:
           fi
           echo "RAR2FS_VERSION=$RAR2FS_VERSION" >> $GITHUB_ENV
 
-      - name: Set tag variables
+      - name: Set Tag Variables
         run: |
-          # Define detailed tags based on extracted versions
+          # Define tag variables based on extracted and static environment variables
+          TAG_TEST="${ORGANIZATION}/${IMAGE_NAME}:test"
+          TAG_LATEST="${ORGANIZATION}/${IMAGE_NAME}:latest"
           TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${BASE_IMAGE_NAME}${BASE_IMAGE_VERSION}-${RAR2FS_VERSION}-${RAR_VERSION}"
-          TAG_GHCR_DETAILED="${GHCR_REGISTRY}/${TAG_DETAILED}"
+          TAG_GHCR_LATEST="ghcr.io/${TAG_LATEST}"
+          TAG_GHCR_DETAILED="ghcr.io/${TAG_DETAILED}"
 
           # Export the detailed tags to be used in subsequent steps
+          echo "TAG_TEST=$TAG_TEST" >> $GITHUB_ENV
+          echo "TAG_LATEST=$TAG_LATEST" >> $GITHUB_ENV
           echo "TAG_DETAILED=$TAG_DETAILED" >> $GITHUB_ENV
+          echo "TAG_GHCR_LATEST=$TAG_GHCR_LATEST" >> $GITHUB_ENV
           echo "TAG_GHCR_DETAILED=$TAG_GHCR_DETAILED" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
@@ -99,11 +94,11 @@ jobs:
           context: .
           load: true
           tags: |
-            ${{ env.TAG_TEST }}
+            ${{ TAG_TEST }}
 
       - name: Test Docker image
         run: |
-          docker run --rm ${{ env.TAG_TEST }} --version
+          docker run --rm ${{ TAG_TEST }} --version
 
       - name: Push Docker images
         uses: docker/build-push-action@v6
@@ -112,7 +107,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.TAG_LATEST }}
-            ${{ env.TAG_DETAILED }}
-            ${{ env.TAG_GHCR_LATEST }}
-            ${{ env.TAG_GHCR_DETAILED }}
+            ${{ TAG_LATEST }}
+            ${{ TAG_DETAILED }}
+            ${{ TAG_GHCR_LATEST }}
+            ${{ TAG_GHCR_DETAILED }}
