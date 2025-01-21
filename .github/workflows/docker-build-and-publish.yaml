@@ -94,11 +94,11 @@ jobs:
           context: .
           load: true
           tags: |
-            ${{ TAG_TEST }}
+            ${{ env.TAG_TEST }}
 
       - name: Test Docker image
         run: |
-          docker run --rm ${{ TAG_TEST }} --version
+          docker run --rm ${{ env.TAG_TEST }} --version
 
       - name: Push Docker images
         uses: docker/build-push-action@v6
@@ -107,7 +107,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ TAG_LATEST }}
-            ${{ TAG_DETAILED }}
-            ${{ TAG_GHCR_LATEST }}
-            ${{ TAG_GHCR_DETAILED }}
+            ${{ env.TAG_LATEST }}
+            ${{ env.TAG_DETAILED }}
+            ${{ env.TAG_GHCR_LATEST }}
+            ${{ env.TAG_GHCR_DETAILED }}
