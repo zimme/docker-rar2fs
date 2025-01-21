@@ -12,7 +12,7 @@ RUN apk add --no-cache --update-cache --upgrade \
   make \
   tar
 
-ARG RAR_VERSION=7.1.3
+ARG RAR_VERSION=7.10
 ARG RAR2FS_VERSION=1.29.7
 
 RUN curl --location --remote-name --remote-header-name "https://www.rarlab.com/rar/unrarsrc-$RAR_VERSION.tar.gz"
