@@ -9,8 +9,8 @@ RUN apk add --no-cache --update-cache --upgrade \
   make \
   tar
 
-ARG RAR_VERSION=6.2.10
-ARG RAR2FS_VERSION=1.29.6
+ARG RAR_VERSION=7.1.3
+ARG RAR2FS_VERSION=1.29.7
 
 RUN curl -L -O "https://www.rarlab.com/rar/unrarsrc-$RAR_VERSION.tar.gz" && \
   curl -L -O "https://github.com/hasse69/rar2fs/releases/download/v$RAR2FS_VERSION/rar2fs-$RAR2FS_VERSION.tar.gz"
