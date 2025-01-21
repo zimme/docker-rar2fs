@@ -43,13 +43,13 @@ jobs:
           echo "BASE_IMAGE_NAME=$BASE_IMAGE_NAME" >> $GITHUB_ENV
           echo "BASE_IMAGE_VERSION=$BASE_IMAGE_VERSION" >> $GITHUB_ENV
 
-          # Extract RAR_VERSION from ARG
-          RAR_VERSION=$(grep '^ARG RAR_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
-          if [ -z "$RAR_VERSION" ]; then
-            echo "Error: RAR_VERSION not found in Dockerfile."
+          # Extract UNRAR_VERSION from ARG
+          UNRAR_VERSION=$(grep '^ARG UNRAR_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
+          if [ -z "$UNRAR_VERSION" ]; then
+            echo "Error: UNRAR_VERSION not found in Dockerfile."
             exit 1
           fi
-          echo "RAR_VERSION=$RAR_VERSION" >> $GITHUB_ENV
+          echo "UNRAR_VERSION=$UNRAR_VERSION" >> $GITHUB_ENV
 
           # Extract RAR2FS_VERSION from ARG
           RAR2FS_VERSION=$(grep '^ARG RAR2FS_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
@@ -63,7 +63,7 @@ jobs:
         run: |
           # Define tag variables based on extracted and static environment variables
           TAG_LATEST="${ORGANIZATION}/${IMAGE_NAME}:latest"
-          TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${RAR2FS_VERSION}-rar${RAR_VERSION}-${BASE_IMAGE_NAME}${BASE_IMAGE_VERSION}"
+          TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${RAR2FS_VERSION}-unrar${UNRAR_VERSION}-${BASE_IMAGE_NAME}${BASE_IMAGE_VERSION}"
           TAG_GHCR_LATEST="ghcr.io/${TAG_LATEST}"
           TAG_GHCR_DETAILED="ghcr.io/${TAG_DETAILED}"
 
