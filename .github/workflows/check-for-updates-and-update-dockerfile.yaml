@@ -9,16 +9,16 @@ jobs:
   check-version-updates:
     runs-on: ubuntu-latest
     outputs:
-      rar_version: ${{ steps.get_latest_rar_version.outputs.version }}
+      unrar_version: ${{ steps.get_latest_unrar_version.outputs.version }}
       rar2fs_version: ${{ steps.get_latest_rar2fs_version.outputs.result }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Get latest UnRAR version
-        id: get_latest_rar_version
+        id: get_latest_unrar_version
         run: |
-          latest_version=$(curl -s https://www.rarlab.com/rarnew.htm | grep -Eo "Version [0-9]+\.[0-9]+" | head -n 1 | awk '{print $2}')
+          latest_version=$(curl -s https://www.rarlab.com/rar_add.htm | grep -Eo 'unrarsrc-[0-9]+\.[0-9]+(\.[0-9]+)?\.tar\.gz' | head -n1 | grep -Eo '[0-9]+\.[0-9]+(\.[0-9]+)?')
           echo "version=$latest_version" >> $GITHUB_OUTPUT
 
       - name: Get latest rar2fs version
@@ -41,7 +41,7 @@ jobs:
 
       - name: Update Dockerfile with new rar version
         run: |
-          sed -i "s/ARG RAR_VERSION=[^ ]*/ARG RAR_VERSION=${{ needs.check-version-updates.outputs.rar_version }}/" Dockerfile
+          sed -i "s/ARG UNRAR_VERSION=[^ ]*/ARG UNRAR_VERSION=${{ needs.check-version-updates.outputs.unrar_version }}/" Dockerfile
 
       - name: Update Dockerfile with new rar2fs version
         run: |
@@ -62,5 +62,5 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "github-actions@github.com"
           git add Dockerfile
-          git commit -m "Update Dockerfile ARG values: rar=${{ needs.check-version-updates.outputs.rar_version }}, rar2fs=${{ needs.check-version-updates.outputs.rar2fs_version }}"
+          git commit -m "Update Dockerfile ARG values: rar=${{ needs.check-version-updates.outputs.unrar_version }}, rar2fs=${{ needs.check-version-updates.outputs.rar2fs_version }}"
           git push
