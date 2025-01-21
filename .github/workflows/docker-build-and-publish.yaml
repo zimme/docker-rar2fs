@@ -6,21 +6,19 @@ on:
       - "main"
 
 env:
-  # Extract organization and repository name from built-in GitHub environment variable
+  # Static Repository Configuration
   ORGANIZATION: zimme
   IMAGE_NAME: rar2fs
 
   # Test tags
   TAG_TEST: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:test
 
-  # Docker Hub tags
+  # Docker Hub tags (only tags that do not depend on step-extracted variables)
   TAG_LATEST: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:latest
-  TAG_DETAILED: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:${{ env.BASE_IMAGE_NAME }}${{ env.BASE_IMAGE_VERSION }}-${{ env.RAR2FS_VERSION }}-${{ env.RAR_VERSION }}
 
-  # GitHub Container Registry tags
+  # GitHub Container Registry tags (initially only latest tag)
   GHCR_REGISTRY: ghcr.io
   TAG_GHCR_LATEST: ${{ env.GHCR_REGISTRY }}/${{ env.TAG_LATEST }}
-  TAG_GHCR_DETAILED: ${{ env.GHCR_REGISTRY }}/${{ env.TAG_DETAILED }}
 
 jobs:
   docker:
@@ -33,7 +31,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Extract versions from Dockerfile
@@ -71,6 +69,16 @@ jobs:
             exit 1
           fi
           echo "RAR2FS_VERSION=$RAR2FS_VERSION" >> $GITHUB_ENV
+
+      - name: Set tag variables
+        run: |
+          # Define detailed tags based on extracted versions
+          TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${BASE_IMAGE_NAME}${BASE_IMAGE_VERSION}-${RAR2FS_VERSION}-${RAR_VERSION}"
+          TAG_GHCR_DETAILED="${GHCR_REGISTRY}/${TAG_DETAILED}"
+
+          # Export the detailed tags to be used in subsequent steps
+          echo "TAG_DETAILED=$TAG_DETAILED" >> $GITHUB_ENV
+          echo "TAG_GHCR_DETAILED=$TAG_GHCR_DETAILED" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
