@@ -1,37 +1,110 @@
-name: Build and Publish
+name: Build, Test, and Publish
 
 on:
   push:
     branches:
       - "main"
 
+env:
+  # Extract organization and repository name from built-in GitHub environment variable
+  ORGANIZATION: zimme
+  IMAGE_NAME: rar2fs
+
+  # Test tags
+  TAG_TEST: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:test
+
+  # Docker Hub tags
+  TAG_LATEST: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:latest
+  TAG_DETAILED: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:${{ env.BASE_IMAGE_NAME }}${{ env.BASE_IMAGE_VERSION }}-${{ env.RAR2FS_VERSION }}-${{ env.RAR_VERSION }}
+
+  # GitHub Container Registry tags
+  GHCR_REGISTRY: ghcr.io
+  TAG_GHCR_LATEST: ${{ env.GHCR_REGISTRY }}/${{ env.TAG_LATEST }}
+  TAG_GHCR_DETAILED: ${{ env.GHCR_REGISTRY }}/${{ env.TAG_DETAILED }}
+
 jobs:
   docker:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v4
+
+      - name: Extract versions from Dockerfile
+        run: |
+          # Extract RUNTIME_IMAGE from ARG
+          RUNTIME_IMAGE=$(grep '^ARG RUNTIME_IMAGE=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
+          if [ -z "$RUNTIME_IMAGE" ]; then
+            echo "Error: RUNTIME_IMAGE not found in Dockerfile."
+            exit 1
+          fi
+          echo "RUNTIME_IMAGE=$RUNTIME_IMAGE" >> $GITHUB_ENV
+
+          # Extract base image name and version
+          BASE_IMAGE_NAME=$(echo $RUNTIME_IMAGE | cut -d':' -f1)
+          BASE_IMAGE_VERSION=$(echo $RUNTIME_IMAGE | cut -d':' -f2)
+          if [ -z "$BASE_IMAGE_NAME" ] || [ -z "$BASE_IMAGE_VERSION" ]; then
+            echo "Error: Failed to parse BASE_IMAGE_NAME or BASE_IMAGE_VERSION."
+            exit 1
+          fi
+          echo "BASE_IMAGE_NAME=$BASE_IMAGE_NAME" >> $GITHUB_ENV
+          echo "BASE_IMAGE_VERSION=$BASE_IMAGE_VERSION" >> $GITHUB_ENV
+
+          # Extract RAR_VERSION from ARG
+          RAR_VERSION=$(grep '^ARG RAR_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
+          if [ -z "$RAR_VERSION" ]; then
+            echo "Error: RAR_VERSION not found in Dockerfile."
+            exit 1
+          fi
+          echo "RAR_VERSION=$RAR_VERSION" >> $GITHUB_ENV
+
+          # Extract RAR2FS_VERSION from ARG
+          RAR2FS_VERSION=$(grep '^ARG RAR2FS_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
+          if [ -z "$RAR2FS_VERSION" ]; then
+            echo "Error: RAR2FS_VERSION not found in Dockerfile."
+            exit 1
+          fi
+          echo "RAR2FS_VERSION=$RAR2FS_VERSION" >> $GITHUB_ENV
+
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v3
+
+      - name: Build Docker images
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: |
+            ${{ env.TAG_TEST }}
+
+      - name: Test Docker image
+        run: |
+          docker run --rm ${{ env.TAG_TEST }} --version
+
+      - name: Push Docker images
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            zimme/rar2fs:latest
-            ghcr.io/zimme/rar2fs:latest
+            ${{ env.TAG_LATEST }}
+            ${{ env.TAG_DETAILED }}
+            ${{ env.TAG_GHCR_LATEST }}
+            ${{ env.TAG_GHCR_DETAILED }}
