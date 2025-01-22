@@ -47,4 +47,4 @@ ENTRYPOINT [ "rar2fs" ]
 HEALTHCHECK --interval=5s --timeout=3s \
   CMD grep --quiet --no-messages rar2fs /proc/mounts
 
-CMD [ "--foreground", "--options", "allow_other", "--options", "auto_unmount", "--seek-length=1", "/source", "/destination" ]
+CMD [ "-f", "-o", "allow_other", "-o", "auto_unmount", "--seek-length=1", "/source", "/destination" ]
