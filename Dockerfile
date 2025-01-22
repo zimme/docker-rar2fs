@@ -45,6 +45,6 @@ COPY --from=builder /rar2fs/src/rar2fs /usr/local/bin/rar2fs
 ENTRYPOINT [ "rar2fs" ]
 
 HEALTHCHECK --interval=5s --timeout=3s \
-  CMD grep --quiet --no-messages rar2fs /proc/mounts
+  CMD grep -qs rar2fs /proc/mounts
 
 CMD [ "-f", "-o", "allow_other", "-o", "auto_unmount", "--seek-length=1", "/source", "/destination" ]
