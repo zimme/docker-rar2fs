@@ -7,6 +7,7 @@ on:
 
 jobs:
   check-version-updates:
+    name: Check for new versions
     runs-on: ubuntu-latest
     outputs:
       unrar_version: ${{ steps.get_latest_unrar_version.outputs.version }}
@@ -33,8 +34,11 @@ jobs:
             return release.data.tag_name.replace(/^v/, '');  // Remove 'v' prefix
 
   update-dockerfile:
+    name: Update Dockerfile with new versions
     runs-on: ubuntu-latest
     needs: check-version-updates
+    outputs:
+      changed: ${{ steps.git_diff.outputs.changed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -56,11 +60,42 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit Dockerfile updates
+      - name: Upload updated Dockerfile
         if: steps.git_diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: updated-dockerfile
+          path: Dockerfile
+
+  commit-changes:
+    name: Commit and push Dockerfile changes
+    runs-on: ubuntu-latest
+    needs: [check-version-updates, update-dockerfile]
+    if: needs.update-dockerfile.outputs.changed == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download updated Dockerfile
+        uses: actions/download-artifact@v4
+        with:
+          name: updated-dockerfile
+
+      - name: Commit Dockerfile updates
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "github-actions@github.com"
           git add Dockerfile
           git commit -m "Update Dockerfile ARG values: rar=${{ needs.check-version-updates.outputs.unrar_version }}, rar2fs=${{ needs.check-version-updates.outputs.rar2fs_version }}"
           git push
+
+      - name: Trigger build workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'docker-build-and-publish.yaml',
+              ref: 'main'
+            });
