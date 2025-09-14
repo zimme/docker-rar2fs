@@ -10,9 +10,77 @@ env:
   IMAGE_NAME: rar2fs
 
 jobs:
-  docker:
+  prepare:
+    name: Prepare build metadata
     runs-on: ubuntu-latest
+    outputs:
+      tag-latest: ${{ steps.set-tags.outputs.tag-latest }}
+      tag-detailed: ${{ steps.set-tags.outputs.tag-detailed }}
+      tag-ghcr-latest: ${{ steps.set-tags.outputs.tag-ghcr-latest }}
+      tag-ghcr-detailed: ${{ steps.set-tags.outputs.tag-ghcr-detailed }}
+      unrar-version: ${{ steps.extract-versions.outputs.unrar-version }}
+      rar2fs-version: ${{ steps.extract-versions.outputs.rar2fs-version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Extract versions from Dockerfile
+        id: extract-versions
+        run: |
+          # Extract RUNTIME_IMAGE from ARG
+          RUNTIME_IMAGE=$(grep '^ARG RUNTIME_IMAGE=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
+          if [ -z "$RUNTIME_IMAGE" ]; then
+            echo "Error: RUNTIME_IMAGE not found in Dockerfile."
+            exit 1
+          fi
+
+          # Extract base image name and version
+          BASE_IMAGE_NAME=$(echo $RUNTIME_IMAGE | cut -d':' -f1)
+          BASE_IMAGE_VERSION=$(echo $RUNTIME_IMAGE | cut -d':' -f2)
+          if [ -z "$BASE_IMAGE_NAME" ] || [ -z "$BASE_IMAGE_VERSION" ]; then
+            echo "Error: Failed to parse BASE_IMAGE_NAME or BASE_IMAGE_VERSION."
+            exit 1
+          fi
+
+          # Extract UNRAR_VERSION from ARG
+          UNRAR_VERSION=$(grep '^ARG UNRAR_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
+          if [ -z "$UNRAR_VERSION" ]; then
+            echo "Error: UNRAR_VERSION not found in Dockerfile."
+            exit 1
+          fi
+
+          # Extract RAR2FS_VERSION from ARG
+          RAR2FS_VERSION=$(grep '^ARG RAR2FS_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
+          if [ -z "$RAR2FS_VERSION" ]; then
+            echo "Error: RAR2FS_VERSION not found in Dockerfile."
+            exit 1
+          fi
+
+          # Set outputs for use in other jobs
+          echo "unrar-version=$UNRAR_VERSION" >> $GITHUB_OUTPUT
+          echo "rar2fs-version=$RAR2FS_VERSION" >> $GITHUB_OUTPUT
+          echo "base-image-name=$BASE_IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "base-image-version=$BASE_IMAGE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set tag variables
+        id: set-tags
+        run: |
+          # Define tag variables based on extracted versions
+          TAG_LATEST="${ORGANIZATION}/${IMAGE_NAME}:latest"
+          TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${{ steps.extract-versions.outputs.rar2fs-version }}-unrar${{ steps.extract-versions.outputs.unrar-version }}-${{ steps.extract-versions.outputs.base-image-name }}${{ steps.extract-versions.outputs.base-image-version }}"
+          TAG_GHCR_LATEST="ghcr.io/${TAG_LATEST}"
+          TAG_GHCR_DETAILED="ghcr.io/${TAG_DETAILED}"
+
+          # Set outputs for use in other jobs
+          echo "tag-latest=$TAG_LATEST" >> $GITHUB_OUTPUT
+          echo "tag-detailed=$TAG_DETAILED" >> $GITHUB_OUTPUT
+          echo "tag-ghcr-latest=$TAG_GHCR_LATEST" >> $GITHUB_OUTPUT
+          echo "tag-ghcr-detailed=$TAG_GHCR_DETAILED" >> $GITHUB_OUTPUT
+
+  build-test:
+    name: Build and test Docker image
+    runs-on: ubuntu-latest
+    needs: prepare
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,56 +91,33 @@ jobs:
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Extract versions from Dockerfile
+      - name: Build Docker image for testing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+          tags: |
+            ${{ needs.prepare.outputs.tag-latest }}
+
+      - name: Test Docker image
         run: |
-          # Extract RUNTIME_IMAGE from ARG
-          RUNTIME_IMAGE=$(grep '^ARG RUNTIME_IMAGE=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
-          if [ -z "$RUNTIME_IMAGE" ]; then
-            echo "Error: RUNTIME_IMAGE not found in Dockerfile."
-            exit 1
-          fi
-          echo "RUNTIME_IMAGE=$RUNTIME_IMAGE" >> $GITHUB_ENV
+          docker run --rm ${{ needs.prepare.outputs.tag-latest }} --version
 
-          # Extract base image name and version
-          BASE_IMAGE_NAME=$(echo $RUNTIME_IMAGE | cut -d':' -f1)
-          BASE_IMAGE_VERSION=$(echo $RUNTIME_IMAGE | cut -d':' -f2)
-          if [ -z "$BASE_IMAGE_NAME" ] || [ -z "$BASE_IMAGE_VERSION" ]; then
-            echo "Error: Failed to parse BASE_IMAGE_NAME or BASE_IMAGE_VERSION."
-            exit 1
-          fi
-          echo "BASE_IMAGE_NAME=$BASE_IMAGE_NAME" >> $GITHUB_ENV
-          echo "BASE_IMAGE_VERSION=$BASE_IMAGE_VERSION" >> $GITHUB_ENV
+  publish:
+    name: Publish Docker images
+    runs-on: ubuntu-latest
+    needs: [prepare, build-test]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-          # Extract UNRAR_VERSION from ARG
-          UNRAR_VERSION=$(grep '^ARG UNRAR_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
-          if [ -z "$UNRAR_VERSION" ]; then
-            echo "Error: UNRAR_VERSION not found in Dockerfile."
-            exit 1
-          fi
-          echo "UNRAR_VERSION=$UNRAR_VERSION" >> $GITHUB_ENV
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-          # Extract RAR2FS_VERSION from ARG
-          RAR2FS_VERSION=$(grep '^ARG RAR2FS_VERSION=' Dockerfile | awk -F'=' '{print $2}' | tr -d ' ')
-          if [ -z "$RAR2FS_VERSION" ]; then
-            echo "Error: RAR2FS_VERSION not found in Dockerfile."
-            exit 1
-          fi
-          echo "RAR2FS_VERSION=$RAR2FS_VERSION" >> $GITHUB_ENV
-
-      - name: Set Tag Variables
-        run: |
-          # Define tag variables based on extracted and static environment variables
-          TAG_LATEST="${ORGANIZATION}/${IMAGE_NAME}:latest"
-          TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${RAR2FS_VERSION}-unrar${UNRAR_VERSION}-${BASE_IMAGE_NAME}${BASE_IMAGE_VERSION}"
-          TAG_GHCR_LATEST="ghcr.io/${TAG_LATEST}"
-          TAG_GHCR_DETAILED="ghcr.io/${TAG_DETAILED}"
-
-          # Export the detailed tags to be used in subsequent steps
-          echo "TAG_TEST=$TAG_TEST" >> $GITHUB_ENV
-          echo "TAG_LATEST=$TAG_LATEST" >> $GITHUB_ENV
-          echo "TAG_DETAILED=$TAG_DETAILED" >> $GITHUB_ENV
-          echo "TAG_GHCR_LATEST=$TAG_GHCR_LATEST" >> $GITHUB_ENV
-          echo "TAG_GHCR_DETAILED=$TAG_GHCR_DETAILED" >> $GITHUB_ENV
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -87,20 +132,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image for testing
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          load: true
-          tags: |
-            ${{ env.TAG_LATEST }}
-
-      - name: Test Docker image
-        run: |
-          docker run --rm ${{ env.TAG_LATEST }} --version
-
       - name: Build and push Docker images
         uses: docker/build-push-action@v6
         with:
@@ -110,7 +141,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.TAG_LATEST }}
-            ${{ env.TAG_DETAILED }}
-            ${{ env.TAG_GHCR_LATEST }}
-            ${{ env.TAG_GHCR_DETAILED }}
+            ${{ needs.prepare.outputs.tag-latest }}
+            ${{ needs.prepare.outputs.tag-detailed }}
+            ${{ needs.prepare.outputs.tag-ghcr-latest }}
+            ${{ needs.prepare.outputs.tag-ghcr-detailed }}
