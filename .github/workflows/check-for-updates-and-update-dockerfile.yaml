@@ -89,6 +89,12 @@ jobs:
           git commit -m "Update Dockerfile ARG values: rar=${{ needs.check-version-updates.outputs.unrar_version }}, rar2fs=${{ needs.check-version-updates.outputs.rar2fs_version }}"
           git push
 
+  trigger-build:
+    name: Trigger build workflow
+    runs-on: ubuntu-latest
+    needs: [check-version-updates, update-dockerfile, commit-changes]
+    if: needs.update-dockerfile.outputs.changed == 'true'
+    steps:
       - name: Trigger build workflow
         uses: actions/github-script@v7
         with:
