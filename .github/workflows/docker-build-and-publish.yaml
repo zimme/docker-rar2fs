@@ -103,13 +103,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
-          outputs: type=oci,dest=/tmp/rar2fs-image
+          outputs: type=oci,dest=/tmp/rar2fs-image,tar=false
 
       - name: Upload image archive artifact
         uses: actions/upload-artifact@v4
         with:
           name: rar2fs-image
           path: /tmp/rar2fs-image
+          retention-days: 1
 
       - name: Build Docker image for testing
         uses: docker/build-push-action@v6
