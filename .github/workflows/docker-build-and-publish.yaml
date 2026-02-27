@@ -153,19 +153,16 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download image archive artifact
-        uses: actions/download-artifact@v4
+      - name: Build and publish Docker images
+        uses: docker/build-push-action@v6
         with:
-          name: rar2fs-image
-          path: /tmp/rar2fs-image
-
-      - name: Publish Docker images from artifact
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ needs.prepare.outputs.tag-latest }} \
-            --tag ${{ needs.prepare.outputs.tag-detailed }} \
-            oci-layout:///tmp/rar2fs-image
-          docker buildx imagetools create \
-            --tag ${{ needs.prepare.outputs.tag-ghcr-latest }} \
-            --tag ${{ needs.prepare.outputs.tag-ghcr-detailed }} \
-            oci-layout:///tmp/rar2fs-image
+          context: .
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.tag-latest }}
+            ${{ needs.prepare.outputs.tag-detailed }}
+            ${{ needs.prepare.outputs.tag-ghcr-latest }}
+            ${{ needs.prepare.outputs.tag-ghcr-detailed }}
