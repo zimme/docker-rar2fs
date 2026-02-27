@@ -70,7 +70,18 @@ docker run \
 
 ## Docker Compose
 
-You can find an example of a docker-compose file [here][docker-compose.yml].
+The simplest way to run this image is with compose:
+
+```sh
+cp docker-compose.example.yml docker-compose.yml
+export RAR_SOURCE=<path/to/rar/files>
+export RAR_DESTINATION=<path/to/empty/folder>
+docker compose up -d
+```
+
+`RAR_DESTINATION` still needs `rshared` bind propagation.
+
+You can find the compose example [here][docker-compose.yml].
 
 [docker-compose.yml]: https://github.com/zimme/docker-rar2fs/blob/master/docker-compose.example.yml
 [`rar2fs`]: https://github.com/hasse69/rar2fs
