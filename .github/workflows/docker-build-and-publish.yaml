@@ -96,35 +96,20 @@ jobs:
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build multi-platform image archive
+      - name: Build and cache Docker image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-          outputs: type=oci,dest=/tmp/rar2fs-image,tar=false
-
-      - name: Upload image archive artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rar2fs-image
-          path: /tmp/rar2fs-image
-          retention-days: 1
-
-      - name: Build Docker image for testing
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          cache-from: type=gha
-          load: true
+          cache-from: type=gha,scope=rar2fs
+          cache-to: type=gha,mode=max,scope=rar2fs
           platforms: linux/amd64
-          tags: |
-            ${{ needs.prepare.outputs.tag-latest }}
+          tags: ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:ci-test
+          load: true
 
       - name: Test Docker image
         run: |
-          docker run --rm ${{ needs.prepare.outputs.tag-latest }} --version
+          docker run --rm ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}:ci-test --version
 
   publish:
     name: Publish Docker images
@@ -153,19 +138,16 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download image archive artifact
-        uses: actions/download-artifact@v4
+      - name: Build and publish Docker images using shared cache
+        uses: docker/build-push-action@v6
         with:
-          name: rar2fs-image
-          path: /tmp/rar2fs-image
-
-      - name: Publish Docker images from artifact
-        run: |
-          docker buildx imagetools create \
-            --tag ${{ needs.prepare.outputs.tag-latest }} \
-            --tag ${{ needs.prepare.outputs.tag-detailed }} \
-            oci-layout:///tmp/rar2fs-image
-          docker buildx imagetools create \
-            --tag ${{ needs.prepare.outputs.tag-ghcr-latest }} \
-            --tag ${{ needs.prepare.outputs.tag-ghcr-detailed }} \
-            oci-layout:///tmp/rar2fs-image
+          context: .
+          cache-from: type=gha,scope=rar2fs
+          cache-to: type=gha,mode=max,scope=rar2fs
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ needs.prepare.outputs.tag-latest }}
+            ${{ needs.prepare.outputs.tag-detailed }}
+            ${{ needs.prepare.outputs.tag-ghcr-latest }}
+            ${{ needs.prepare.outputs.tag-ghcr-detailed }}
