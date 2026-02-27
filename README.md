@@ -74,8 +74,8 @@ The simplest way to run this image is with compose:
 
 ```sh
 cp docker-compose.example.yml docker-compose.yml
-export RAR_SOURCE=<path/to/rar/files>
-export RAR_DESTINATION=<path/to/empty/folder>
+export RAR_SOURCE=/path/to/rar/files
+export RAR_DESTINATION=/path/to/empty/folder
 docker compose up -d
 ```
 
