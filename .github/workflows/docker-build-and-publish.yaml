@@ -129,6 +129,7 @@ jobs:
 
       - name: Test Docker image
         run: |
+          docker pull --platform linux/amd64 ${{ needs.prepare.outputs.tag-staging }}
           docker run --rm ${{ needs.prepare.outputs.tag-staging }} --version
 
   publish:
