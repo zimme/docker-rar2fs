@@ -118,6 +118,7 @@ jobs:
 
       - name: Test Docker image
         run: |
+          docker pull ${{ needs.prepare.outputs.tag-staging }}
           docker run --rm ${{ needs.prepare.outputs.tag-staging }} --version
 
   publish:
@@ -152,8 +153,6 @@ jobs:
           docker buildx imagetools create \
             --tag ${{ needs.prepare.outputs.tag-latest }} \
             --tag ${{ needs.prepare.outputs.tag-detailed }} \
-            ${{ needs.prepare.outputs.tag-staging }}
-          docker buildx imagetools create \
             --tag ${{ needs.prepare.outputs.tag-ghcr-latest }} \
             --tag ${{ needs.prepare.outputs.tag-ghcr-detailed }} \
             ${{ needs.prepare.outputs.tag-staging }}
