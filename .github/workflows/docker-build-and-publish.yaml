@@ -23,7 +23,6 @@ jobs:
       tag-detailed: ${{ steps.set-tags.outputs.tag-detailed }}
       tag-ghcr-latest: ${{ steps.set-tags.outputs.tag-ghcr-latest }}
       tag-ghcr-detailed: ${{ steps.set-tags.outputs.tag-ghcr-detailed }}
-      tag-staging: ${{ steps.set-tags.outputs.tag-staging }}
       unrar-version: ${{ steps.extract-versions.outputs.unrar-version }}
       rar2fs-version: ${{ steps.extract-versions.outputs.rar2fs-version }}
     steps:
@@ -74,7 +73,6 @@ jobs:
           # Define tag variables based on extracted versions
           TAG_LATEST="${ORGANIZATION}/${IMAGE_NAME}:latest"
           TAG_DETAILED="${ORGANIZATION}/${IMAGE_NAME}:${{ steps.extract-versions.outputs.rar2fs-version }}-unrar${{ steps.extract-versions.outputs.unrar-version }}-${{ steps.extract-versions.outputs.base-image-name }}${{ steps.extract-versions.outputs.base-image-version }}"
-          TAG_STAGING="${ORGANIZATION}/${IMAGE_NAME}:staging-${{ github.run_id }}"
           TAG_GHCR_LATEST="ghcr.io/${TAG_LATEST}"
           TAG_GHCR_DETAILED="ghcr.io/${TAG_DETAILED}"
 
@@ -83,12 +81,13 @@ jobs:
           echo "tag-detailed=$TAG_DETAILED" >> $GITHUB_OUTPUT
           echo "tag-ghcr-latest=$TAG_GHCR_LATEST" >> $GITHUB_OUTPUT
           echo "tag-ghcr-detailed=$TAG_GHCR_DETAILED" >> $GITHUB_OUTPUT
-          echo "tag-staging=$TAG_STAGING" >> $GITHUB_OUTPUT
 
   build-test:
     name: Build and test Docker image
     runs-on: ubuntu-latest
     needs: prepare
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -105,21 +104,19 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push multi-platform staging image
+      - name: Build and push multi-platform image by digest
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ needs.prepare.outputs.tag-staging }}
+          outputs: type=image,name=${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }},name-canonical=true,push-by-digest=true,push=true
 
       - name: Test Docker image
         run: |
-          docker pull ${{ needs.prepare.outputs.tag-staging }}
-          docker run --rm ${{ needs.prepare.outputs.tag-staging }} --version
+          docker run --rm ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }} --version
 
   publish:
     name: Publish Docker images
@@ -148,11 +145,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish Docker images from staging tag
+      - name: Publish Docker images from built digest
         run: |
           docker buildx imagetools create \
             --tag ${{ needs.prepare.outputs.tag-latest }} \
             --tag ${{ needs.prepare.outputs.tag-detailed }} \
             --tag ${{ needs.prepare.outputs.tag-ghcr-latest }} \
             --tag ${{ needs.prepare.outputs.tag-ghcr-detailed }} \
-            ${{ needs.prepare.outputs.tag-staging }}
+            ${{ env.ORGANIZATION }}/${{ env.IMAGE_NAME }}@${{ needs.build-test.outputs.image-digest }}
