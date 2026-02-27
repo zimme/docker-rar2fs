@@ -6,6 +6,10 @@ on:
       - "main"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   ORGANIZATION: zimme
   IMAGE_NAME: rar2fs
